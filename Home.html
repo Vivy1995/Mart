@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Campus-Mart — Never Run Out Again</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Syne (display) + Outfit (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="Home.css" />
+
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green:  '#22C55E',
+              navy:   '#1E3A8A',
+              orange: '#F97316',
+              dark:   '#0D1117',
+              card:   '#161B22',
+            }
+          },
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body:    ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="font-body bg-white dark:bg-brand-dark text-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+  <!-- ========================================================
+       CONFETTI CANVAS (full-screen, pointer-events: none)
+  ======================================================== -->
+  <canvas id="confetti-canvas" class="fixed inset-0 z-[9999] pointer-events-none"></canvas>
+
+  <!-- ========================================================
+       TOAST NOTIFICATION
+  ======================================================== -->
+  <div id="toast" class="toast-notification" aria-live="polite">
+    <span id="toast-icon">🛒</span>
+    <span id="toast-message">Added to cart!</span>
+  </div>
+
+  <!-- ========================================================
+       NAVBAR
+  ======================================================== -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 navbar-glass">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+
+      <!-- Logo -->
+      <a href="#home" class="flex items-center gap-2 shrink-0">
+        <div class="w-8 h-8 rounded-lg bg-brand-green flex items-center justify-center">
+          <span class="text-white font-display font-bold text-sm">CM</span>
+        </div>
+        <span class="font-display font-bold text-xl text-brand-navy dark:text-brand-green">Campus<span class="text-brand-orange">Mart</span></span>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <div class="hidden md:flex items-center gap-6 text-sm font-medium">
+        <a href="#home"     class="nav-link">Home</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#products" class="nav-link">Browse</a>
+        <a href="#dashboard" class="nav-link">Dashboard</a>
+      </div>
+
+      <!-- Right Controls -->
+      <div class="flex items-center gap-2 ml-auto md:ml-0">
+
+        <!-- Role Switcher -->
+        <div class="role-switcher hidden md:flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-full p-1">
+          <button class="role-btn active" data-role="student"  onclick="switchRole('student')">🎓 Student</button>
+          <button class="role-btn"        data-role="vendor"   onclick="switchRole('vendor')">🏪 Vendor</button>
+          <button class="role-btn"        data-role="courier"  onclick="switchRole('courier')">🛵 Courier</button>
+        </div>
+
+        <!-- Dark Mode Toggle -->
+        <button id="dark-toggle" onclick="toggleDarkMode()" class="nav-icon-btn" title="Toggle dark mode" aria-label="Toggle dark mode">
+          <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10 5 5 0 000-10z"/></svg>
+          <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+
+        <!-- Cart Button -->
+        <button onclick="openCart()" class="nav-icon-btn relative" aria-label="Open cart">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-10H5.4M7 13l-1.5 6h13M9 19a1 1 0 100 2 1 1 0 000-2zm8 0a1 1 0 100 2 1 1 0 000-2z"/></svg>
+          <span id="cart-count" class="cart-badge hidden">0</span>
+        </button>
+
+        <!-- Hamburger (mobile) -->
+        <button id="hamburger" onclick="toggleMenu()" class="nav-icon-btn md:hidden" aria-label="Toggle menu" aria-expanded="false">
+          <div class="hamburger-lines">
+            <span></span><span></span><span></span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========================================================
+       MOBILE SLIDE-IN MENU
+  ======================================================== -->
+  <div id="mobile-overlay" class="mobile-overlay" onclick="closeMenu()"></div>
+  <aside id="mobile-menu" class="mobile-menu" aria-hidden="true">
+    <div class="p-6 flex flex-col h-full">
+      <div class="flex items-center justify-between mb-8">
+        <span class="font-display font-bold text-lg text-brand-navy dark:text-brand-green">Menu</span>
+        <button onclick="closeMenu()" class="nav-icon-btn" aria-label="Close menu">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Mobile Role Switcher -->
+      <div class="mb-6">
+        <p class="text-xs text-gray-500 uppercase tracking-widest mb-3 font-semibold">Switch Role</p>
+        <div class="flex flex-col gap-2">
+          <button class="mobile-role-btn active" data-role="student"  onclick="switchRole('student'); closeMenu()">🎓 Student</button>
+          <button class="mobile-role-btn"        data-role="vendor"   onclick="switchRole('vendor'); closeMenu()">🏪 Vendor</button>
+          <button class="mobile-role-btn"        data-role="courier"  onclick="switchRole('courier'); closeMenu()">🛵 Courier</button>
+        </div>
+      </div>
+
+      <nav class="flex flex-col gap-2">
+        <a href="#home"      class="mobile-nav-link" onclick="closeMenu()">🏠 Home</a>
+        <a href="#features"  class="mobile-nav-link" onclick="closeMenu()">✨ Features</a>
+        <a href="#products"  class="mobile-nav-link" onclick="closeMenu()">🛒 Browse</a>
+        <a href="#dashboard" class="mobile-nav-link" onclick="closeMenu()">📊 Dashboard</a>
+      </nav>
+
+      <div class="mt-auto pt-6 border-t border-gray-200 dark:border-gray-700">
+        <p class="text-xs text-gray-400 text-center">Campus-Mart © 2025<br>Never Run Out Again 🇳🇬</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================
+       MAIN CONTENT
+  ======================================================== -->
+  <main>
+
+    <!-- ── HERO SECTION ───────────────────────────────────── -->
+    <section id="home" class="hero-section min-h-screen flex items-center pt-16 overflow-hidden relative">
+      <!-- Decorative blobs -->
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+
+      <div class="max-w-7xl mx-auto px-4 py-20 md:py-28 w-full">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+          <!-- Text -->
+          <div class="hero-text">
+            <div class="inline-flex items-center gap-2 bg-brand-green/10 text-brand-green border border-brand-green/30 rounded-full px-4 py-1.5 text-sm font-semibold mb-6">
+              <span class="w-2 h-2 rounded-full bg-brand-green animate-pulse"></span>
+              Now live on Nigerian campuses 🇳🇬
+            </div>
+            <h1 class="font-display text-5xl md:text-6xl lg:text-7xl font-extrabold leading-none mb-6">
+              Never<br>
+              <span class="text-gradient">Run Out</span><br>
+              Again.
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 text-lg md:text-xl mb-8 max-w-lg leading-relaxed">
+              Campus-Mart connects students, vendors, and couriers on Nigerian university campuses. Smart pantry tracking, fast delivery, zero wahala.
+            </p>
+            <div class="flex flex-wrap gap-3">
+              <a href="#products" class="btn-primary">Shop Now 🛒</a>
+              <a href="#dashboard" class="btn-secondary">View Dashboard →</a>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="flex flex-wrap gap-6 mt-10">
+              <div>
+                <p class="font-display text-2xl font-bold text-brand-navy dark:text-white">12K+</p>
+                <p class="text-sm text-gray-500">Students</p>
+              </div>
+              <div class="border-l border-gray-200 dark:border-gray-700 pl-6">
+                <p class="font-display text-2xl font-bold text-brand-navy dark:text-white">340+</p>
+                <p class="text-sm text-gray-500">Vendors</p>
+              </div>
+              <div class="border-l border-gray-200 dark:border-gray-700 pl-6">
+                <p class="font-display text-2xl font-bold text-brand-navy dark:text-white">98%</p>
+                <p class="text-sm text-gray-500">On-time Delivery</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Visual -->
+          <div class="hero-visual hidden md:flex justify-center items-center">
+            <div class="hero-phone-mockup">
+              <!-- Simulated app screen -->
+              <div class="phone-screen">
+                <div class="phone-header">
+                  <span class="font-display font-bold text-white text-xs">Campus<span class="text-brand-orange">Mart</span></span>
+                  <span class="text-white/60 text-xs">₦0 delivery today!</span>
+                </div>
+                <div class="phone-body">
+                  <div class="phone-card green">🍞 Bread <span>₦450</span></div>
+                  <div class="phone-card orange">🥚 Eggs (crate) <span>₦1,800</span></div>
+                  <div class="phone-card navy">🍜 Indomie (10) <span>₦2,000</span></div>
+                  <div class="phone-card green">🧴 Soap (Dettol) <span>₦600</span></div>
+                  <div class="phone-btn">Add to Cart 🛒</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FEATURES SECTION ───────────────────────────────── -->
+    <section id="features" class="py-20 md:py-28 bg-gray-50 dark:bg-gray-900/50">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-14">
+          <p class="text-brand-green font-semibold text-sm uppercase tracking-widest mb-3">Why Campus-Mart</p>
+          <h2 class="font-display text-4xl md:text-5xl font-extrabold text-brand-navy dark:text-white">Built for campus life.</h2>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Feature Cards -->
+          <div class="feature-card">
+            <div class="feature-icon bg-brand-green/10 text-brand-green">📦</div>
+            <h3 class="font-display font-bold text-lg mt-4 mb-2">Smart Pantry Tracker</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Know what's left in your hostel pantry. Get alerts before you run out of essentials.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon bg-brand-orange/10 text-brand-orange">⚡</div>
+            <h3 class="font-display font-bold text-lg mt-4 mb-2">Express Hostel Delivery</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Orders delivered directly to your hostel block within 30 minutes by verified campus couriers.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon bg-brand-navy/10 text-brand-navy dark:text-blue-300">🤖</div>
+            <h3 class="font-display font-bold text-lg mt-4 mb-2">Auto Shopping Lists</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Our AI analyzes your consumption patterns and auto-generates weekly shopping lists for you.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon bg-brand-green/10 text-brand-green">🛍️</div>
+            <h3 class="font-display font-bold text-lg mt-4 mb-2">Vendor Marketplace</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Campus vendors list products, track inventory, and receive orders — all in one dashboard.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon bg-brand-orange/10 text-brand-orange">🛵</div>
+            <h3 class="font-display font-bold text-lg mt-4 mb-2">Courier Jobs</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Students with bikes earn money delivering orders between lecture periods. Flexible gig income.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon bg-brand-navy/10 text-brand-navy dark:text-blue-300">💳</div>
+            <h3 class="font-display font-bold text-lg mt-4 mb-2">Easy Payments</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Pay with Paystack, transfer, or Campus-Mart wallet. No POS, no stress.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PRODUCT GRID SECTION ───────────────────────────── -->
+    <section id="products" class="py-20 md:py-28">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div>
+            <p class="text-brand-green font-semibold text-sm uppercase tracking-widest mb-2">Available Now</p>
+            <h2 class="font-display text-4xl font-extrabold text-brand-navy dark:text-white">Shop the Market</h2>
+          </div>
+          <!-- Category Filter -->
+          <div class="flex gap-2 flex-wrap" id="category-filter">
+            <button class="filter-btn active" data-cat="all" onclick="filterProducts('all', this)">All</button>
+            <button class="filter-btn" data-cat="food" onclick="filterProducts('food', this)">🍲 Food</button>
+            <button class="filter-btn" data-cat="hygiene" onclick="filterProducts('hygiene', this)">🧴 Hygiene</button>
+            <button class="filter-btn" data-cat="snacks" onclick="filterProducts('snacks', this)">🍫 Snacks</button>
+            <button class="filter-btn" data-cat="drinks" onclick="filterProducts('drinks', this)">🧃 Drinks</button>
+          </div>
+        </div>
+
+        <!-- Products Grid (populated by JS) -->
+        <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"></div>
+      </div>
+    </section>
+
+    <!-- ── DASHBOARD SECTION ──────────────────────────────── -->
+    <section id="dashboard" class="py-20 md:py-28 bg-gray-50 dark:bg-gray-900/50">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div>
+            <p class="text-brand-green font-semibold text-sm uppercase tracking-widest mb-2">Your Space</p>
+            <h2 class="font-display text-4xl font-extrabold text-brand-navy dark:text-white">
+              <span id="dashboard-title">Student Dashboard</span>
+            </h2>
+          </div>
+          <!-- Desktop role switcher (duplicated for clarity) -->
+          <div class="role-switcher flex items-center gap-1 bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-200 dark:border-gray-700">
+            <button class="role-btn active" data-role="student"  onclick="switchRole('student')">🎓 Student</button>
+            <button class="role-btn"        data-role="vendor"   onclick="switchRole('vendor')">🏪 Vendor</button>
+            <button class="role-btn"        data-role="courier"  onclick="switchRole('courier')">🛵 Courier</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Dashboard Content -->
+        <div id="dashboard-content"></div>
+      </div>
+    </section>
+
+    <!-- ── FOOTER ─────────────────────────────────────────── -->
+    <footer class="bg-brand-navy text-white py-12">
+      <div class="max-w-7xl mx-auto px-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 rounded-lg bg-brand-green flex items-center justify-center">
+              <span class="text-white font-display font-bold text-sm">CM</span>
+            </div>
+            <span class="font-display font-bold text-xl">Campus<span class="text-brand-orange">Mart</span></span>
+          </div>
+          <p class="text-sm text-blue-200 leading-relaxed">Serving Nigerian university students one delivery at a time. 🇳🇬</p>
+        </div>
+        <div>
+          <h4 class="font-display font-bold mb-4 text-brand-green">Students</h4>
+          <ul class="space-y-2 text-sm text-blue-200">
+            <li><a href="#" class="hover:text-white transition-colors">Pantry Tracker</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Shopping Lists</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Order History</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-display font-bold mb-4 text-brand-orange">Vendors</h4>
+          <ul class="space-y-2 text-sm text-blue-200">
+            <li><a href="#" class="hover:text-white transition-colors">List Products</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Analytics</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Payments</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-display font-bold mb-4 text-white">Couriers</h4>
+          <ul class="space-y-2 text-sm text-blue-200">
+            <li><a href="#" class="hover:text-white transition-colors">Available Jobs</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Earnings</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">Leaderboard</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="max-w-7xl mx-auto px-4 mt-8 pt-8 border-t border-blue-800 text-center text-sm text-blue-400">
+        © 2025 Campus-Mart · Built with ❤️ for Nigerian students
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- ========================================================
+       MINI-CART MODAL
+  ======================================================== -->
+  <div id="cart-overlay" class="cart-overlay" onclick="closeCart()"></div>
+  <div id="cart-modal" class="cart-modal" aria-hidden="true" role="dialog" aria-label="Shopping cart">
+    <div class="cart-modal-inner">
+      <!-- Handle bar (mobile) -->
+      <div class="flex justify-center mb-4 md:hidden">
+        <div class="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+      </div>
+
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-display font-bold text-xl text-brand-navy dark:text-white">Your Cart 🛒</h2>
+        <button onclick="closeCart()" class="nav-icon-btn" aria-label="Close cart">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Cart Items -->
+      <div id="cart-items-list" class="space-y-3 mb-6 max-h-64 overflow-y-auto pr-1"></div>
+
+      <!-- Empty State -->
+      <div id="cart-empty" class="py-10 text-center hidden">
+        <p class="text-4xl mb-3">🛒</p>
+        <p class="font-display font-bold text-gray-400">Your cart is empty</p>
+        <p class="text-sm text-gray-400 mt-1">Add items from the market!</p>
+      </div>
+
+      <!-- Subtotal -->
+      <div id="cart-footer" class="border-t border-gray-200 dark:border-gray-700 pt-4 hidden">
+        <div class="flex justify-between items-center mb-2 text-sm text-gray-500 dark:text-gray-400">
+          <span>Subtotal</span>
+          <span id="cart-subtotal" class="font-semibold text-gray-800 dark:text-white">₦0</span>
+        </div>
+        <div class="flex justify-between items-center mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <span>Delivery</span>
+          <span class="text-brand-green font-semibold">FREE 🎉</span>
+        </div>
+        <button onclick="checkout()" class="btn-primary w-full text-center justify-center">
+          Proceed to Checkout →
+        </button>
+        <button onclick="clearCart()" class="w-full mt-2 text-sm text-red-400 hover:text-red-600 transition-colors py-2">
+          Clear cart
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       CHECKOUT SUCCESS MODAL
+  ======================================================== -->
+  <div id="checkout-overlay" class="cart-overlay" onclick="closeCheckout()"></div>
+  <div id="checkout-modal" class="checkout-modal hidden" role="dialog">
+    <div class="text-center p-8">
+      <div class="w-20 h-20 rounded-full bg-brand-green/10 flex items-center justify-center mx-auto mb-4">
+        <span class="text-4xl">✅</span>
+      </div>
+      <h2 class="font-display font-bold text-2xl text-brand-navy dark:text-white mb-2">Order Placed!</h2>
+      <p class="text-gray-500 dark:text-gray-400 mb-6">Your order is confirmed and will be delivered to your hostel in ~25 minutes. 🚀</p>
+      <button onclick="closeCheckout()" class="btn-primary mx-auto">Back to Shopping</button>
+    </div>
+  </div>
+
+  <!-- Main Script -->
+  <script src="Home.js"></script>
+</body>
+</html>
